@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Notepad v3</title>
+<title>Notepad v4</title>
 
 <script type="importmap">
   {
@@ -94,7 +94,7 @@
 
 <header>
   <h1>Notepad</h1>
-  <span class="version">v3</span>
+  <span class="version">v4</span>
   <div id="status"><div id="dot"></div><span id="stTxt">Connexion...</span></div>
 </header>
 
@@ -155,8 +155,9 @@
   let currentTab = "notes";
   let selectedTag = "a-gmva-expo";
 
+  // Force le format "jeudi 5 mars" en français
   const getFrenchDate = () => {
-    return new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+    return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   };
 
   function init() {
@@ -226,6 +227,7 @@
       return matchTab && matchSearch && matchTag;
     });
 
+    // Tri par updatedAt (Le plus récemment ouvert ou modifié en premier)
     filtered.sort((a,b) => (b.updatedAt || 0) - (a.updatedAt || 0)).forEach(n => {
       const tagList = n.tags ? n.tags.split(',').map(t => t.trim()).filter(t => t !== "") : [];
       const el = document.createElement("div");
@@ -250,7 +252,7 @@
     if (!note) return;
     currentId = id;
     
-    // Remonter la note en haut lors de l'ouverture (tri dynamique)
+    // Remonter la note en haut lors de l'ouverture
     await update(ref(db, 'notes/' + id), { updatedAt: Date.now() });
 
     document.getElementById("title").value = note.title;
