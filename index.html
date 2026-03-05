@@ -169,26 +169,42 @@
     renderList();
   };
 
-  window.renderList = () => {
-    const $list = document.getElementById("list");
-    $list.innerHTML = "";
-    const search = document.getElementById("search").value.toLowerCase();
-    
-    const filtered = notes.filter(n => {
-      const isArch = !!n.archived;
-      const matchTab = (currentTab === "archived") ? isArch : !isArch;
-      const matchSearch = n.title.toLowerCase().includes(search) || n.body.toLowerCase().includes(search);
-      return matchTab && matchSearch;
-    });
+window.renderList = () => {
+  const $list = document.getElementById("list");
+  $list.innerHTML = "";
+  const search = document.getElementById("search").value.toLowerCase();
+  
+  const filtered = notes.filter(n => {
+    const isArch = !!n.archived;
+    const matchTab = (currentTab === "archived") ? isArch : !isArch;
+    const matchSearch = (n.title + n.body + n.tags).toLowerCase().includes(search);
+    return matchTab && matchSearch;
+  });
 
-    filtered.forEach(n => {
-      const el = document.createElement("div");
-      el.className = "ni" + (n.id === currentId ? " active" : "");
-      el.innerHTML = `<div class="ni-t">${n.title || "Sans titre"}</div><div class="ni-d">${n.date}</div>`;
-      el.onclick = () => openNote(n.id);
-      $list.appendChild(el);
+  filtered.forEach(n => {
+    // On transforme la chaîne "Tag1, Tag2" en tableau
+    const tagArray = n.tags ? n.tags.split(',').map(t => t.trim()).filter(t => t !== "") : [];
+    
+    const el = document.createElement("div");
+    el.className = "ni" + (n.id === currentId ? " active" : "");
+    
+    // Construction du HTML de la note avec les tags
+    let tagsHtml = '<div class="ni-tags">';
+    tagArray.forEach(t => {
+      tagsHtml += `<span class="ni-tag">${t}</span>`;
     });
-  };
+    tagsHtml += '</div>';
+
+    el.innerHTML = `
+      <div class="ni-t">${n.title || "Sans titre"}</div>
+      <div class="ni-d">${n.date}</div>
+      ${tagArray.length > 0 ? tagsHtml : ''}
+    `;
+    
+    el.onclick = () => openNote(n.id);
+    $list.appendChild(el);
+  });
+};
 
   window.openNote = (id) => {
     const note = notes.find(n => n.id === id);
