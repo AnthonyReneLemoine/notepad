@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Notepad v6</title>
+<title>Notepad v7</title>
 
 <script type="importmap">
   {
@@ -78,6 +78,8 @@
   #btnSave{background:var(--accent);color:#fff}
   #btnDupl{background:var(--success);color:#fff}
   #btnArch{background:var(--card);color:var(--text);border:1px solid var(--border)}
+  #btnClose{background:none;color:var(--muted);border:1px solid var(--border);padding:10px 12px}
+  #btnClose:hover{border-color:var(--danger);color:var(--danger)}
   
   .tag-zone{display:flex;align-items:center;flex-wrap:wrap;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;cursor:text}
   #tagChips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -123,7 +125,7 @@
 
 <header>
   <h1>Notepad</h1>
-  <span class="version">v6</span>
+  <span class="version">v7</span>
   <div id="status"><div id="dot"></div><span id="stTxt">Connexion...</span></div>
   <div id="userInfo" style="display:none">
     <span id="userEmail"></span>
@@ -151,6 +153,7 @@
       <button class="btn" id="btnSave" onclick="saveCurrentNote()">Enregistrer</button>
       <button class="btn" id="btnDupl" onclick="duplicateNote()">Dupliquer</button>
       <button class="btn" id="btnArch" onclick="toggleArchive()">Action</button>
+      <button class="btn" id="btnClose" onclick="hideEditor()" title="Fermer la note">✕</button>
     </div>
     <div class="tag-zone" id="tagZone">
       <span style="color:var(--muted);font-size:0.85rem;flex-shrink:0">Étiquettes :</span>
@@ -571,7 +574,7 @@
     showToast("Supprimé");
   };
 
-  function hideEditor() {
+  window.hideEditor = function hideEditor() {
     document.getElementById("editor").classList.add("hide");
     currentId = null;
     renderList();
