@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Notepad v5</title>
+<title>Notepad v6</title>
 
 <script type="importmap">
   {
@@ -79,8 +79,17 @@
   #btnDupl{background:var(--success);color:#fff}
   #btnArch{background:var(--card);color:var(--text);border:1px solid var(--border)}
   
-  .tag-zone{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px}
-  #tagInput{background:transparent;border:none;color:var(--text);flex:1;padding:4px;outline:none;font-size:0.9rem}
+  .tag-zone{display:flex;align-items:center;flex-wrap:wrap;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;cursor:text}
+  #tagChips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .tag-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(124,106,247,0.15);border:1px solid rgba(124,106,247,0.35);border-radius:20px;padding:3px 10px;font-size:0.8rem;color:var(--accent)}
+  .tag-chip-del{background:none;border:none;color:var(--accent);cursor:pointer;font-size:1rem;line-height:1;padding:0 0 0 2px;opacity:0.6;display:flex;align-items:center}
+  .tag-chip-del:hover{opacity:1}
+  #tagInput{background:transparent;border:none;color:var(--text);padding:4px 2px;outline:none;font-size:0.9rem;width:100%}
+  #tagDropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);z-index:200;max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+  #tagDropdown.open{display:block}
+  .tag-sugg{padding:9px 14px;font-size:0.85rem;cursor:pointer;color:var(--text)}
+  .tag-sugg:hover,.tag-sugg.focused{background:var(--card)}
+  .tag-sugg.new-tag{color:var(--accent)}
   
   #body{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:20px;font-size:1rem;line-height:1.7;resize:none;outline:none;font-family:inherit}
 
@@ -114,7 +123,7 @@
 
 <header>
   <h1>Notepad</h1>
-  <span class="version">v5</span>
+  <span class="version">v6</span>
   <div id="status"><div id="dot"></div><span id="stTxt">Connexion...</span></div>
   <div id="userInfo" style="display:none">
     <span id="userEmail"></span>
@@ -143,9 +152,13 @@
       <button class="btn" id="btnDupl" onclick="duplicateNote()">Dupliquer</button>
       <button class="btn" id="btnArch" onclick="toggleArchive()">Action</button>
     </div>
-    <div class="tag-zone">
-      <span style="color:var(--muted);font-size:0.85rem">Étiquettes :</span>
-      <input type="text" id="tagInput" placeholder="Séparez par des virgules...">
+    <div class="tag-zone" id="tagZone">
+      <span style="color:var(--muted);font-size:0.85rem;flex-shrink:0">Étiquettes :</span>
+      <div id="tagChips"></div>
+      <div style="position:relative;flex:1;min-width:100px">
+        <input type="text" id="tagInput" placeholder="Ajouter un tag..." autocomplete="off">
+        <div id="tagDropdown"></div>
+      </div>
     </div>
     <textarea id="body" placeholder="Commencez à écrire..."></textarea>
     <div style="text-align:right; padding-top:10px">
@@ -199,6 +212,8 @@
   let currentTab = "notes";
   let selectedTag = "a-gmva-expo";
   let dbUnsubscribe = null;
+  let currentTags = [];
+  let tagSuggFocused = -1;
 
   // Force le format "jeudi 5 mars" en français
   const getFrenchDate = () => {
@@ -264,6 +279,124 @@
       document.getElementById("editor").classList.add("hide");
       renderList();
       updateCounts();
+    }
+  });
+
+  // ── Tag autocomplete ──
+  function getAllKnownTags() {
+    const set = new Set();
+    notes.forEach(n => {
+      if (n.tags) n.tags.split(',').map(t => t.trim()).filter(Boolean).forEach(t => set.add(t));
+    });
+    return Array.from(set).sort();
+  }
+
+  function renderTagChips() {
+    const chips = document.getElementById("tagChips");
+    chips.innerHTML = "";
+    currentTags.forEach(tag => {
+      const chip = document.createElement("span");
+      chip.className = "tag-chip";
+      const label = document.createTextNode(tag);
+      const btn = document.createElement("button");
+      btn.className = "tag-chip-del";
+      btn.type = "button";
+      btn.textContent = "×";
+      btn.onclick = () => { currentTags = currentTags.filter(t => t !== tag); renderTagChips(); };
+      chip.appendChild(label);
+      chip.appendChild(btn);
+      chips.appendChild(chip);
+    });
+  }
+
+  function addTag(raw) {
+    const tag = raw.trim();
+    if (!tag || currentTags.includes(tag)) return;
+    currentTags.push(tag);
+    renderTagChips();
+    document.getElementById("tagInput").value = "";
+    closeTagDropdown();
+  }
+
+  function closeTagDropdown() {
+    document.getElementById("tagDropdown").classList.remove("open");
+    tagSuggFocused = -1;
+  }
+
+  function openTagDropdown(query) {
+    const dropdown = document.getElementById("tagDropdown");
+    const known = getAllKnownTags().filter(t =>
+      !currentTags.includes(t) &&
+      (query === "" || t.toLowerCase().includes(query.toLowerCase()))
+    );
+    const showNew = query.trim() && !known.map(t=>t.toLowerCase()).includes(query.trim().toLowerCase()) && !currentTags.map(t=>t.toLowerCase()).includes(query.trim().toLowerCase());
+
+    dropdown.innerHTML = "";
+    known.forEach(tag => {
+      const el = document.createElement("div");
+      el.className = "tag-sugg";
+      el.textContent = tag;
+      el.onmousedown = e => { e.preventDefault(); addTag(tag); };
+      dropdown.appendChild(el);
+    });
+    if (showNew) {
+      const el = document.createElement("div");
+      el.className = "tag-sugg new-tag";
+      el.textContent = `+ Créer "${query.trim()}"`;
+      el.onmousedown = e => { e.preventDefault(); addTag(query.trim()); };
+      dropdown.appendChild(el);
+    }
+    if (dropdown.children.length > 0) {
+      dropdown.classList.add("open");
+      tagSuggFocused = -1;
+    } else {
+      closeTagDropdown();
+    }
+  }
+
+  document.getElementById("tagInput").addEventListener("input", e => {
+    const val = e.target.value;
+    if (val.endsWith(',')) { addTag(val.slice(0, -1)); }
+    else { openTagDropdown(val); }
+  });
+
+  document.getElementById("tagInput").addEventListener("focus", e => {
+    openTagDropdown(e.target.value);
+  });
+
+  document.getElementById("tagInput").addEventListener("blur", () => {
+    setTimeout(closeTagDropdown, 150);
+  });
+
+  document.getElementById("tagInput").addEventListener("keydown", e => {
+    const items = document.getElementById("tagDropdown").querySelectorAll(".tag-sugg");
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (tagSuggFocused >= 0 && items[tagSuggFocused]) {
+        items[tagSuggFocused].onmousedown(e);
+      } else {
+        addTag(document.getElementById("tagInput").value);
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      tagSuggFocused = Math.min(tagSuggFocused + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle("focused", i === tagSuggFocused));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      tagSuggFocused = Math.max(tagSuggFocused - 1, -1);
+      items.forEach((el, i) => el.classList.toggle("focused", i === tagSuggFocused));
+    } else if (e.key === "Escape") {
+      closeTagDropdown();
+    } else if (e.key === "Backspace" && !e.target.value && currentTags.length > 0) {
+      currentTags.pop();
+      renderTagChips();
+    }
+  });
+
+  // Cliquer sur la zone de tags focus l'input
+  document.getElementById("tagZone").addEventListener("click", e => {
+    if (e.target === document.getElementById("tagZone") || e.target === document.getElementById("tagChips")) {
+      document.getElementById("tagInput").focus();
     }
   });
 
@@ -365,7 +498,9 @@
 
     document.getElementById("title").value = note.title;
     document.getElementById("body").value = note.body;
-    document.getElementById("tagInput").value = note.tags || "";
+    currentTags = note.tags ? note.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+    renderTagChips();
+    document.getElementById("tagInput").value = "";
     document.getElementById("btnArch").textContent = note.archived ? "Restaurer" : "Archiver";
     document.getElementById("editor").classList.remove("hide");
     renderList();
@@ -391,7 +526,9 @@
     currentId = "note_" + Date.now();
     document.getElementById("title").value = "";
     document.getElementById("body").value = "";
-    document.getElementById("tagInput").value = (selectedTag && selectedTag !== "Tous") ? selectedTag : "";
+    currentTags = (selectedTag && selectedTag !== "Tous") ? [selectedTag] : [];
+    renderTagChips();
+    document.getElementById("tagInput").value = "";
     document.getElementById("btnArch").textContent = "Archiver";
     document.getElementById("editor").classList.remove("hide");
     document.getElementById("title").focus();
@@ -404,7 +541,7 @@
       id: currentId,
       title: document.getElementById("title").value,
       body: document.getElementById("body").value,
-      tags: document.getElementById("tagInput").value,
+      tags: currentTags.join(', '),
       date: getFrenchDate(),
       updatedAt: Date.now(),
       archived: note.archived || false
