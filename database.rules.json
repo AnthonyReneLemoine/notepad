@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "notes": {
+      ".read":  "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}
