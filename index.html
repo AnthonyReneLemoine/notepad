@@ -496,14 +496,13 @@
       sw.onclick = () => {
         currentColor = c.key;
         renderColorSwatches();
-        // Appliquer immédiatement la couleur à l'éditeur
         document.getElementById("editor").style.background = getColorBg(c.key);
       };
       wrap.appendChild(sw);
     });
   }
 
-
+  function init() {
     document.getElementById("overlay").style.display = "flex";
     dbUnsubscribe = onValue(ref(db, 'notes'), (snapshot) => {
       const data = snapshot.val();
