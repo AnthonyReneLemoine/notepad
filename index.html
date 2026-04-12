@@ -116,10 +116,11 @@
 
   main{width:33%;max-width:33%;display:flex;flex-direction:column;overflow:hidden;padding:16px;gap:12px;background:#fff;border-right:1px solid var(--border);order:-1}
   main.hide{display:none}
-  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:nowrap;overflow:hidden}
-  .toolbar #title{flex:1;min-width:80px}
-  .toolbar .btn{flex-shrink:0;white-space:nowrap}
-  #title{flex:1;background:#fff;border:1px solid var(--border);border-radius:12px;color:var(--text);padding:10px 14px;font-size:1.1rem;font-weight:600;outline:none;min-width:180px}
+  
+  .toolbar{display:flex;flex-direction:column;gap:10px;}
+  .toolbar-buttons{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .toolbar-buttons .btn{flex-shrink:0;white-space:nowrap}
+  #title{width:100%;background:#fff;border:1px solid var(--border);border-radius:12px;color:var(--text);padding:10px 14px;font-size:1.1rem;font-weight:600;outline:none;}
 
   .btn{padding:9px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:600;font-size:0.82rem;transition:0.2s}
   #btnSave{background:#1a73e8;color:#fff}
@@ -208,12 +209,15 @@
   <main id="editor" class="hide">
     <div class="toolbar">
       <input type="text" id="title" placeholder="Titre de la note">
-      <button class="btn" id="btnSave" onclick="saveCurrentNote()">Enregistrer</button>
-      <button class="btn" id="btnDupl" onclick="duplicateNote()">Dupliquer</button>
-      <button class="btn" id="btnPin" onclick="togglePin()">Épingler</button>
-      <button class="btn" id="btnArch" onclick="toggleArchive()">Action</button>
-      <button class="btn" id="btnClose" onclick="hideEditor()" title="Fermer la note">✕</button>
-    </div>    <div class="tag-zone" id="tagZone">
+      <div class="toolbar-buttons">
+        <button class="btn" id="btnSave" onclick="saveCurrentNote()">Enregistrer</button>
+        <button class="btn" id="btnDupl" onclick="duplicateNote()">Dupliquer</button>
+        <button class="btn" id="btnPin" onclick="togglePin()">Épingler</button>
+        <button class="btn" id="btnArch" onclick="toggleArchive()">Action</button>
+        <button class="btn" id="btnClose" onclick="hideEditor()" title="Fermer la note">✕</button>
+      </div>
+    </div>
+    <div class="tag-zone" id="tagZone">
       <span style="color:var(--muted);font-size:0.85rem;flex-shrink:0">Étiquettes :</span>
       <div id="tagChips"></div>
       <div style="position:relative;flex:1;min-width:100px">
@@ -232,7 +236,6 @@
   </main>
 </div>
 
-<!-- Login Screen -->
 <div id="loginScreen">
   <div class="login-box">
     <h2>Notepad</h2>
